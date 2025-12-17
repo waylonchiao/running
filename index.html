@@ -1,415 +1,134 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🏃‍♂️ 跑团月度成绩单</title>
-    
-    <!-- 微信分享时的缩略图建议（虽然现在微信抓取规则变了，但保留一个隐藏图是个好习惯） -->
-    <div style="display:none;"><img src="https:[EMAIL]/icons/png/512/384/384153.png" alt="icon"></div>
-
-    <link href="https:[EMAIL]/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https:[EMAIL]/font/bootstrap-icons.css">
-    
-    <style>
-        body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; touch-action: manipulation; }
-        .container { max-width: 800px; } /* 手机端限制最大宽度，防止平板上太宽 */
-        .card { border: none; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
-        .card-header { background-color: #fff; border-bottom: 1px solid #f0f0f0; font-weight: 600; border-radius: 12px 12px 0 0 !important; padding: 15px; }
-        .rank-badge { width: 24px; height: 24px; display: inline-block; text-align: center; line-height: 24px; border-radius: 4px; color: #fff; font-size: 0.75rem; font-weight: bold; }
-        .rank-1 { background: linear-gradient(45deg, #FFD700, #FFC107); }
-        .rank-2 { background: linear-gradient(45deg, #C0C0C0, #ADB5BD); }
-        .rank-3 { background: linear-gradient(45deg, #CD7F32, #D2691E); }
-        .rank-other { background-color: #f0f0f0; color: #999; }
-        .chart-container { height: 350px; width: 100%; }
-        
-        /* 针对手机的微调 */
-        @media (max-width: 576px) {
-            h3 { font-size: 1.25rem; }
-            .btn-group-sm > .btn { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
-            .list-group-item { padding: 12px 15px; }
-        }
-    </style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>🏃‍♂️ 跑团月度成绩单</title>
+<link href="https://cdn.staticfile.org/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+<style>
+body{background:#f0f2f5;font-family:sans-serif}.container{max-width:800px}.card{border:none;border-radius:12px;margin-bottom:16px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.rank-badge{width:24px;height:24px;text-align:center;line-height:24px;border-radius:4px;color:#fff;font-weight:bold;display:inline-block}
+.rank-1{background:#FFD700}.rank-2{background:#C0C0C0}.rank-3{background:#CD7F32}.rank-other{background:#f0f0f0;color:#999}
+[v-cloak]{display:none!important}.chart-container{height:350px}
+.nav-pills .nav-link{border-radius:20px;color:#666;margin:0 5px;transition:all .2s}
+.nav-pills .nav-link.active-dist{background:#0d6efd;color:#fff;font-weight:bold}
+.nav-pills .nav-link.active-count{background:#ffc107;color:#000;font-weight:bold}
+.nav-pills .nav-link.active-pace{background:#dc3545;color:#fff;font-weight:bold}
+</style>
 </head>
 <body>
-
-<div id="app" class="container py-3">
-    
-    <!-- 顶部：仅管理员可见录入入口，发布给群友的文件会自动隐藏 -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="mb-0 fw-bold text-dark">🏃‍♂️ 跑团成绩单</h3>
-        <ul class="nav nav-pills nav-fill bg-white rounded p-1 shadow-sm" v-if="isAdminMode">
-            <li class="nav-item">
-                <a class="nav-link py-1 px-3 small" :class="{active: currentView === 'dashboard'}" href="#" @click="currentView = 'dashboard'">看表</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link py-1 px-3 small" :class="{active: currentView === 'entry'}" href="#" @click="currentView = 'entry'">录入</a>
-            </li>
-        </ul>
-    </div>
-
-    <!-- 视图1：数据看板 -->
-    <div v-show="currentView === 'dashboard'">
-        
-        <!-- 筛选器：针对手指触摸优化 -->
-        <div class="card">
-            <div class="card-body py-3">
-                <div class="row g-2 align-items-center">
-                    <div class="col-6">
-                        <select class="form-select form-select-sm bg-light border-0" v-model="filter.mode">
-                            <option value="month">📅 当月排名</option>
-                            <option value="all">🏆 累计排名</option>
-                        </select>
-                    </div>
-                    <div class="col-6" v-if="filter.mode === 'month'">
-                        <select class="form-select form-select-sm bg-light border-0" v-model="filter.month">
-                            <option v-for="m in 12" :value="m">{{ m }}月</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+<div id="app" class="container py-3" v-cloak>
+    <h3 class="fw-bold mb-3 text-center">🏃‍♂️ 跑团成绩单</h3>
+    <div class="card"><div class="card-body py-2"><div class="row g-2">
+        <div class="col-6"><select class="form-select form-select-sm border-0 bg-light" v-model="filter.mode"><option value="month">📅 当月排名</option><option value="all">🏆 累计排名</option></select></div>
+        <div class="col-6" v-if="filter.mode=='month'"><select class="form-select form-select-sm border-0 bg-light" v-model="filter.month"><option v-for="m in 12" :value="m">{{m}}月</option></select></div>
+    </div></div></div>
+    <div class="card">
+        <div class="card-header bg-white p-2">
+            <ul class="nav nav-pills nav-fill">
+                <li class="nav-item"><a class="nav-link" :class="{'active-dist': tab=='dist'}" @click="tab='dist'">跑神榜</a></li>
+                <li class="nav-item"><a class="nav-link" :class="{'active-count': tab=='count'}" @click="tab='count'">勤奋榜</a></li>
+                <li class="nav-item"><a class="nav-link" :class="{'active-pace': tab=='pace'}" @click="tab='pace'">飞毛腿</a></li>
+            </ul>
         </div>
-
-        <!-- 排名卡片：使用 Tabs 切换节省手机空间 -->
-        <div class="card">
-            <div class="card-header p-2">
-                <ul class="nav nav-pills nav-fill card-header-pills">
-                    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-dist" @click="activeTab='dist'">跑神榜</a></li>
-                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-count" @click="activeTab='count'">勤奋榜</a></li>
-                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-pace" @click="activeTab='pace'">飞毛腿</a></li>
-                </ul>
-            </div>
-            <div class="card-body p-0">
-                <div class="tab-content">
-                    <!-- 距离榜 -->
-                    <div class="tab-pane fade show active" v-show="activeTab==='dist'">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item d-flex justify-content-between align-items-center" v-for="(item, index) in rankings.distance" :key="item.name">
-                                <div class="d-flex align-items-center">
-                                    <span class="rank-badge" :class="getRankClass(index)">{{ index + 1 }}</span>
-                                    <span class="ms-3 fw-medium">{{ item.name }}</span>
-                                </div>
-                                <span class="fw-bold text-primary">{{ item.distance.toFixed(1) }} <small class="text-muted fw-normal">km</small></span>
-                            </li>
-                            <li v-if="rankings.distance.length === 0" class="list-group-item text-center text-muted py-4">本月暂无数据</li>
-                        </ul>
-                    </div>
-                    <!-- 次数榜 -->
-                    <div class="tab-pane fade" :class="{show: activeTab==='count', active: activeTab==='count'}" v-show="activeTab==='count'">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item d-flex justify-content-between align-items-center" v-for="(item, index) in rankings.count" :key="item.name">
-                                <div class="d-flex align-items-center">
-                                    <span class="rank-badge" :class="getRankClass(index)">{{ index + 1 }}</span>
-                                    <span class="ms-3 fw-medium">{{ item.name }}</span>
-                                </div>
-                                <span class="fw-bold text-dark">{{ item.count }} <small class="text-muted fw-normal">次</small></span>
-                            </li>
-                        </ul>
-                    </div>
-                    <!-- 配速榜 -->
-                    <div class="tab-pane fade" :class="{show: activeTab==='pace', active: activeTab==='pace'}" v-show="activeTab==='pace'">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item d-flex justify-content-between align-items-center" v-for="(item, index) in rankings.pace" :key="item.name">
-                                <div class="d-flex align-items-center">
-                                    <span class="rank-badge" :class="getRankClass(index)">{{ index + 1 }}</span>
-                                    <span class="ms-3 fw-medium">{{ item.name }}</span>
-                                </div>
-                                <span class="fw-bold text-danger">{{ item.pace }} <small class="text-muted fw-normal">/km</small></span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 个人趋势 -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span>📈 个人月度趋势</span>
-            </div>
-            <div class="card-body">
-                <select class="form-select mb-3" v-model="selectedUser">
-                    <option value="" disabled>🔍 点击选择跑友查看详情...</option>
-                    <option v-for="user in allUsers" :value="user">{{ user }}</option>
-                </select>
-                <div v-if="selectedUser" id="trendChart" class="chart-container"></div>
-                <div v-else class="text-center py-5 text-muted bg-light rounded">
-                    👆 请先选择一位跑友
-                </div>
-            </div>
-        </div>
-        
-        <div class="text-center text-muted small mt-4 mb-5">
-            Generated by 跑团小助手
+        <div class="card-body p-0">
+            <ul class="list-group list-group-flush" v-if="tab=='dist'">
+                <li class="list-group-item d-flex justify-content-between" v-for="(i,x) in rank.dist">
+                    <span><span class="rank-badge me-2" :class="getCls(x)">{{x+1}}</span>{{i.name}}</span><span class="fw-bold text-primary">{{i.distance.toFixed(1)}} km</span>
+                </li><li v-if="!rank.dist.length" class="p-3 text-center text-muted">暂无数据</li>
+            </ul>
+            <ul class="list-group list-group-flush" v-if="tab=='count'">
+                <li class="list-group-item d-flex justify-content-between" v-for="(i,x) in rank.count">
+                    <span><span class="rank-badge me-2" :class="getCls(x)">{{x+1}}</span>{{i.name}}</span><span class="fw-bold">{{i.count}} 次</span>
+                </li>
+            </ul>
+            <ul class="list-group list-group-flush" v-if="tab=='pace'">
+                <li class="list-group-item d-flex justify-content-between" v-for="(i,x) in rank.pace">
+                    <span><span class="rank-badge me-2" :class="getCls(x)">{{x+1}}</span>{{i.name}}</span><span class="fw-bold text-danger">{{i.pace}} /km</span>
+                </li>
+            </ul>
         </div>
     </div>
-
-    <!-- 视图2：数据录入 (仅管理员可见) -->
-    <div v-show="currentView === 'entry' && isAdminMode">
-        
-        <!-- 发布区 -->
-        <div class="card border-success border-2 mb-4">
-            <div class="card-body text-center">
-                <h5 class="text-success fw-bold">🚀 发布给群友</h5>
-                <p class="small text-muted mb-3">录入完数据后，点击下方按钮，生成一个包含最新数据的网页文件。把那个文件上传到网站即可。</p>
-                <button class="btn btn-success w-100 py-2" @click="exportHtmlFile">
-                    <i class="bi bi-file-earmark-arrow-down"></i> 生成发布文件 (index.html)
-                </button>
-            </div>
-        </div>
-
-        <div class="row g-3">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">📂 批量导入</div>
-                    <div class="card-body">
-                        <button class="btn btn-sm btn-outline-secondary mb-3" @click="downloadTemplate">⬇️ 下载CSV模板</button>
-                        <input type="file" class="form-control" @change="handleFileUpload" accept=".csv">
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">📝 手动录入</div>
-                    <div class="card-body">
-                        <form @submit.prevent="addRecord">
-                            <div class="row g-3">
-                                <div class="col-6">
-                                    <label class="form-label small">姓名</label>
-                                    <input type="text" class="form-control" v-model="form.name" required list="userList">
-                                    <datalist id="userList"><option v-for="user in allUsers" :value="user"></option></datalist>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label small">日期</label>
-                                    <input type="date" class="form-control" v-model="form.date" required>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label small">类型</label>
-                                    <select class="form-select" v-model="form.type">
-                                        <option value="跑步">🏃 跑步</option>
-                                        <option value="力量">🏋️ 力量</option>
-                                        <option value="户外">🧗 户外</option>
-                                    </select>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label small">距离(km)</label>
-                                    <input type="number" step="0.01" class="form-control" v-model="form.distance" :disabled="form.type !== '跑步' && form.type !== '户外'">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label small">配速(分.秒)</label>
-                                    <input type="number" step="0.01" class="form-control" v-model="form.pace" :disabled="form.type !== '跑步'">
-                                </div>
-                                <div class="col-12 mt-3">
-                                    <button type="submit" class="btn btn-primary w-100">提交</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between">
-                        <span>数据记录 ({{ records.length }})</span>
-                        <button class="btn btn-xs btn-link text-danger p-0" @click="clearData">清空</button>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive" style="max-height: 300px;">
-                            <table class="table table-sm table-striped mb-0 small">
-                                <thead><tr><th>日期</th><th>姓名</th><th>数据</th></tr></thead>
-                                <tbody>
-                                    <tr v-for="r in recentRecords" :key="r.id">
-                                        <td>{{ r.date.slice(5) }}</td>
-                                        <td>{{ r.name }}</td>
-                                        <td>{{ r.type=='跑步' ? r.distance+'km' : r.type }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="card">
+        <div class="card-header small fw-bold">📈 个人趋势 (近6个月)</div>
+        <div class="card-body">
+            <select class="form-select mb-2" v-model="user"><option value="" disabled>选择跑友...</option><option v-for="u in users" :value="u">{{u}}</option></select>
+            <div id="chart" class="chart-container" v-show="user"></div>
+            <div v-show="!user" class="text-center py-4 text-muted bg-light rounded">请选择跑友查看详情</div>
         </div>
     </div>
-
+    <div class="text-center small text-muted mt-4 mb-5">Generated by 跑团小助手</div>
 </div>
-
-<script src="https:[EMAIL]/dist/vue.global.js"></script>
-<script src="https:[EMAIL]/dist/echarts.min.js"></script>
-
+<script src="https://cdn.staticfile.org/vue/3.3.4/vue.global.prod.min.js"></script>
+<script src="https://cdn.staticfile.org/echarts/5.4.3/echarts.min.js"></script>
 <script>
-    const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
-
-    createApp({
-        setup() {
-            // --- 核心配置 ---
-            // 这是一个标记，用于判断当前是“管理员录入模式”还是“群友查看模式”
-            // 如果本地有数据，或者URL里带 ?admin=1，则显示录入界面
-            const isAdminMode = ref(true); 
-
-            const currentView = ref('dashboard');
-            const activeTab = ref('dist');
-            const records = ref([]);
-            const filter = ref({ mode: 'month', month: new Date().getMonth() + 1 });
-            const selectedUser = ref('');
-            const form = ref({ name: '', date: new Date().toISOString().split('T')[0], type: '跑步', distance: '', pace: '' });
-            let chartInstance = null;
-
-            // --- 初始化 ---
-            onMounted(() => {
-                // 1. 尝试从 HTML 内部读取（发布模式）
-                const embeddedData = document.getElementById('embedded-data');
-                if (embeddedData && embeddedData.textContent.trim() !== '') {
-                    try {
-                        records.value = JSON.parse(embeddedData.textContent);
-                        isAdminMode.value = false; // 发布版默认隐藏后台
-                        console.log("Loaded embedded data");
-                    } catch(e) { console.error(e); }
-                } else {
-                    // 2. 尝试从 LocalStorage 读取（管理员模式）
-                    const saved = localStorage.getItem('run_records');
-                    if (saved) {
-                        records.value = JSON.parse(saved);
-                    } else {
-                        // 首次使用初始化空数组
-                        records.value = []; 
-                    }
-                }
-
-                // 检查 URL 是否强制开启管理员模式 (方便你查看发布后的页面时也能录入)
-                if (window.location.search.includes('admin=1')) {
-                    isAdminMode.value = true;
-                }
-                
-                window.addEventListener('resize', () => { if(chartInstance) chartInstance.resize(); });
+const {createApp,ref,computed,watch,nextTick} = Vue;
+createApp({
+    setup(){
+        const data = [{"id":1765956246108,"date":"2025/6/13","name":"老戴","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246110,"date":"2025/6/13","name":"老黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246111,"date":"2025/6/13","name":"小黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246112,"date":"2025/6/13","name":"范教练","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246113,"date":"2025/6/13","name":"茂哥","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246114,"date":"2025/6/13","name":"晓旭","type":"力量","distance":0,"pace":0,"count":0},{"id":1765956246115,"date":"2025/6/13","name":"贝贝","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246116,"date":"2025/6/13","name":"华仔","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246117,"date":"2025/6/13","name":"新华","type":"力量","distance":0,"pace":0,"count":0},{"id":1765956246118,"date":"2025/6/13","name":"焕雄","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246120,"date":"2025/6/13","name":"大鹏","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246121,"date":"2025/6/13","name":"老丁","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246122,"date":"2025/6/13","name":"赵威","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246123,"date":"2025/6/20","name":"老戴","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246124,"date":"2025/6/20","name":"老黄队","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246125,"date":"2025/6/20","name":"小黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246126,"date":"2025/6/20","name":"范教练","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246127,"date":"2025/6/20","name":"茂哥","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246128,"date":"2025/6/20","name":"晓旭","type":"力量","distance":0,"pace":0,"count":0},{"id":1765956246129,"date":"2025/6/20","name":"贝贝","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246130,"date":"2025/6/20","name":"华仔","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246131,"date":"2025/6/20","name":"新华","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246132,"date":"2025/6/20","name":"焕雄","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246133,"date":"2025/6/20","name":"大鹏","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246134,"date":"2025/6/20","name":"老丁","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246135,"date":"2025/6/20","name":"赵威","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246136,"date":"2025/6/27","name":"老戴","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246137,"date":"2025/6/27","name":"老黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246138,"date":"2025/6/27","name":"小黄队","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246139,"date":"2025/6/27","name":"范教练","type":"力量","distance":0,"pace":0,"count":5},{"id":1765956246140,"date":"2025/6/27","name":"茂哥","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246141,"date":"2025/6/27","name":"晓旭","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246142,"date":"2025/6/27","name":"贝贝","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246143,"date":"2025/6/27","name":"华仔","type":"力量","distance":0,"pace":0,"count":0},{"id":1765956246144,"date":"2025/6/27","name":"新华","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246145,"date":"2025/6/27","name":"焕雄","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246146,"date":"2025/6/27","name":"大鹏","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246147,"date":"2025/6/27","name":"老丁","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246148,"date":"2025/6/27","name":"赵威","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246149,"date":"2025/6/4","name":"老戴","type":"力量","distance":0,"pace":0,"count":5},{"id":1765956246150,"date":"2025/6/4","name":"老黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246152,"date":"2025/6/4","name":"小黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246153,"date":"2025/6/4","name":"范教练","type":"力量","distance":0,"pace":0,"count":7},{"id":1765956246154,"date":"2025/6/4","name":"茂哥","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246155,"date":"2025/6/4","name":"晓旭","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246156,"date":"2025/6/4","name":"贝贝","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246157,"date":"2025/6/4","name":"华仔","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246158,"date":"2025/6/4","name":"新华","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246159,"date":"2025/6/4","name":"焕雄","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246160,"date":"2025/6/4","name":"大鹏","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246161,"date":"2025/6/4","name":"老丁","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246162,"date":"2025/6/4","name":"赵威","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246163,"date":"2025/7/11","name":"老戴","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246164,"date":"2025/7/11","name":"老黄队","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246165,"date":"2025/7/11","name":"小黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246166,"date":"2025/7/11","name":"范教练","type":"力量","distance":0,"pace":0,"count":6},{"id":1765956246167,"date":"2025/7/11","name":"茂哥","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246168,"date":"2025/7/11","name":"晓旭","type":"力量","distance":0,"pace":0,"count":5},{"id":1765956246169,"date":"2025/7/11","name":"贝贝","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246170,"date":"2025/7/11","name":"华仔","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246171,"date":"2025/7/11","name":"新华","type":"力量","distance":0,"pace":0,"count":0},{"id":1765956246172,"date":"2025/7/11","name":"焕雄","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246173,"date":"2025/7/11","name":"大鹏","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246174,"date":"2025/7/11","name":"老丁","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246175,"date":"2025/7/11","name":"赵威","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246176,"date":"2025/7/18","name":"老戴","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246177,"date":"2025/7/18","name":"老黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246178,"date":"2025/7/18","name":"小黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246179,"date":"2025/7/18","name":"范教练","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246180,"date":"2025/7/18","name":"茂哥","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246181,"date":"2025/7/18","name":"晓旭","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246182,"date":"2025/7/18","name":"贝贝","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246184,"date":"2025/7/18","name":"华仔","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246185,"date":"2025/7/18","name":"新华","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246186,"date":"2025/7/18","name":"焕雄","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246187,"date":"2025/7/18","name":"大鹏","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246188,"date":"2025/7/18","name":"老丁","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246189,"date":"2025/7/18","name":"赵威","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246190,"date":"2025/7/25","name":"老戴","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246191,"date":"2025/7/25","name":"老黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246192,"date":"2025/7/25","name":"小黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246193,"date":"2025/7/25","name":"范教练","type":"力量","distance":0,"pace":0,"count":6},{"id":1765956246194,"date":"2025/7/25","name":"茂哥","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246195,"date":"2025/7/25","name":"晓旭","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246196,"date":"2025/7/25","name":"贝贝","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246197,"date":"2025/7/25","name":"华仔","type":"力量","distance":0,"pace":0,"count":0},{"id":1765956246198,"date":"2025/7/25","name":"新华","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246199,"date":"2025/7/25","name":"焕雄","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246200,"date":"2025/7/25","name":"大鹏","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246201,"date":"2025/7/25","name":"老丁","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246202,"date":"2025/7/25","name":"赵威","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246203,"date":"2025/7/1","name":"老戴","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246204,"date":"2025/7/1","name":"老黄队","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246205,"date":"2025/7/1","name":"小黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246206,"date":"2025/7/1","name":"范教练","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246207,"date":"2025/7/1","name":"茂哥","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246208,"date":"2025/7/1","name":"晓旭","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246209,"date":"2025/7/1","name":"贝贝","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246210,"date":"2025/7/1","name":"华仔","type":"力量","distance":0,"pace":0,"count":0},{"id":1765956246211,"date":"2025/7/1","name":"新华","type":"力量","distance":0,"pace":0,"count":0},{"id":1765956246212,"date":"2025/7/1","name":"焕雄","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246213,"date":"2025/7/1","name":"大鹏","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246214,"date":"2025/7/1","name":"老丁","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246216,"date":"2025/7/1","name":"赵威","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246217,"date":"2025/8/8","name":"老戴","type":"力量","distance":0,"pace":0,"count":0},{"id":1765956246218,"date":"2025/8/8","name":"老黄队","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246219,"date":"2025/8/8","name":"小黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246220,"date":"2025/8/8","name":"范教练","type":"力量","distance":0,"pace":0,"count":5},{"id":1765956246221,"date":"2025/8/8","name":"茂哥","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246222,"date":"2025/8/8","name":"晓旭","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246223,"date":"2025/8/8","name":"贝贝","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246224,"date":"2025/8/8","name":"华仔","type":"力量","distance":0,"pace":0,"count":0},{"id":1765956246225,"date":"2025/8/8","name":"新华","type":"力量","distance":0,"pace":0,"count":0},{"id":1765956246226,"date":"2025/8/8","name":"焕雄","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246227,"date":"2025/8/8","name":"大鹏","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246228,"date":"2025/8/8","name":"老丁","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246229,"date":"2025/8/8","name":"赵威","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246230,"date":"2025/8/15","name":"老戴","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246231,"date":"2025/8/15","name":"老黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246232,"date":"2025/8/15","name":"小黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246233,"date":"2025/8/15","name":"范教练","type":"力量","distance":0,"pace":0,"count":5},{"id":1765956246234,"date":"2025/8/15","name":"茂哥","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246235,"date":"2025/8/15","name":"晓旭","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246236,"date":"2025/8/15","name":"贝贝","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246237,"date":"2025/8/15","name":"华仔","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246238,"date":"2025/8/15","name":"新华","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246239,"date":"2025/8/15","name":"焕雄","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246240,"date":"2025/8/15","name":"大鹏","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246241,"date":"2025/8/15","name":"老丁","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246242,"date":"2025/8/15","name":"赵威","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246243,"date":"2025/8/22","name":"老戴","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246245,"date":"2025/8/22","name":"老黄队","type":"力量","distance":0,"pace":0,"count":null},{"id":1765956246246,"date":"2025/8/22","name":"小黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246247,"date":"2025/8/22","name":"范教练","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246248,"date":"2025/8/22","name":"茂哥","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246249,"date":"2025/8/22","name":"晓旭","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246250,"date":"2025/8/22","name":"贝贝","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246251,"date":"2025/8/22","name":"华仔","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246252,"date":"2025/8/22","name":"新华","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246253,"date":"2025/8/22","name":"焕雄","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246254,"date":"2025/8/22","name":"大鹏","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246255,"date":"2025/8/22","name":"老丁","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246256,"date":"2025/8/22","name":"赵威","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246257,"date":"2025/8/29","name":"老戴","type":"力量","distance":0,"pace":0,"count":null},{"id":1765956246258,"date":"2025/8/29","name":"老黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246259,"date":"2025/8/29","name":"小黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246260,"date":"2025/8/29","name":"范教练","type":"力量","distance":0,"pace":0,"count":5},{"id":1765956246261,"date":"2025/8/29","name":"茂哥","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246262,"date":"2025/8/29","name":"晓旭","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246263,"date":"2025/8/29","name":"贝贝","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246264,"date":"2025/8/29","name":"华仔","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246265,"date":"2025/8/29","name":"新华","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246266,"date":"2025/8/29","name":"焕雄","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246267,"date":"2025/8/29","name":"大鹏","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246268,"date":"2025/8/29","name":"老丁","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246270,"date":"2025/8/29","name":"赵威","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246271,"date":"2025/8/5","name":"老戴","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246272,"date":"2025/8/5","name":"老黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246273,"date":"2025/8/5","name":"小黄队","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246274,"date":"2025/8/5","name":"范教练","type":"力量","distance":0,"pace":0,"count":6},{"id":1765956246275,"date":"2025/8/5","name":"茂哥","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246276,"date":"2025/8/5","name":"晓旭","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246277,"date":"2025/8/5","name":"贝贝","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246278,"date":"2025/8/5","name":"华仔","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246279,"date":"2025/9/5","name":"新华","type":"跑步","distance":3.3,"pace":6.5,"count":1},{"id":1765956246280,"date":"2025/8/5","name":"焕雄","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246281,"date":"2025/8/5","name":"大鹏","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246282,"date":"2025/9/5","name":"老丁","type":"跑步","distance":5.2,"pace":11.6,"count":5},{"id":1765956246283,"date":"2025/9/5","name":"赵威","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246284,"date":"2025/9/9","name":"老戴","type":"跑步","distance":10,"pace":6.2,"count":1},{"id":1765956246285,"date":"2025/9/6","name":"老戴","type":"跑步","distance":12,"pace":6.1,"count":1},{"id":1765956246286,"date":"2025/9/7","name":"老黄队","type":"跑步","distance":5,"pace":6.3,"count":1},{"id":1765956246287,"date":"2025/9/7","name":"小黄队","type":"跑步","distance":5.3,"pace":7.5,"count":1},{"id":1765956246288,"date":"2025/9/12","name":"范教练","type":"力量","distance":0,"pace":0,"count":6},{"id":1765956246289,"date":"2025/9/7","name":"茂哥","type":"跑步","distance":6.2,"pace":6.5,"count":1},{"id":1765956246290,"date":"2025/9/7","name":"晓旭","type":"跑步","distance":4.1,"pace":8.4,"count":1},{"id":1765956246291,"date":"2025/9/8","name":"晓旭","type":"跑步","distance":4.1,"pace":7.2,"count":1},{"id":1765956246292,"date":"2025/9/6","name":"贝贝","type":"跑步","distance":5.6,"pace":8.3,"count":1},{"id":1765956246293,"date":"2025/9/8","name":"华仔","type":"跑步","distance":6.7,"pace":6.3,"count":1},{"id":1765956246294,"date":"2025/9/9","name":"新华","type":"跑步","distance":3.3,"pace":6.2,"count":1},{"id":1765956246296,"date":"2025/9/7","name":"焕雄","type":"跑步","distance":4.9,"pace":7.2,"count":1},{"id":1765956246297,"date":"2025/9/6","name":"大鹏","type":"跑步","distance":5.9,"pace":8.2,"count":1},{"id":1765956246298,"date":"2025/9/7","name":"大鹏","type":"跑步","distance":5,"pace":5.6,"count":1},{"id":1765956246299,"date":"2025/9/7","name":"老丁","type":"跑步","distance":5.2,"pace":11.6,"count":1},{"id":1765956246300,"date":"2025/9/6","name":"赵威","type":"跑步","distance":5.6,"pace":6.2,"count":1},{"id":1765956246301,"date":"2025/9/9","name":"华仔","type":"跑步","distance":4.6,"pace":8.8,"count":1},{"id":1765956246302,"date":"2025/9/9","name":"焕雄","type":"跑步","distance":3.7,"pace":6.1,"count":1},{"id":1765956246303,"date":"2025/9/10","name":"茂哥","type":"跑步","distance":6.2,"pace":6.6,"count":1},{"id":1765956246304,"date":"2025/9/10","name":"老戴","type":"跑步","distance":11.2,"pace":5.3,"count":1},{"id":1765956246305,"date":"2025/9/10","name":"小黄队","type":"跑步","distance":5.3,"pace":6.4,"count":1},{"id":1765956246306,"date":"2025/9/11","name":"老丁","type":"跑步","distance":5.6,"pace":7.5,"count":1},{"id":1765956246307,"date":"2025/9/11","name":"李尚","type":"跑步","distance":7.6,"pace":7,"count":1},{"id":1765956246308,"date":"2025/9/12","name":"焕雄","type":"跑步","distance":6,"pace":6.3,"count":1},{"id":1765956246309,"date":"2025/9/12","name":"大鹏","type":"跑步","distance":5.5,"pace":8.2,"count":1},{"id":1765956246310,"date":"2025/9/12","name":"贝贝","type":"跑步","distance":6.3,"pace":6.4,"count":1},{"id":1765956246311,"date":"2025/9/12","name":"茂哥","type":"跑步","distance":6,"pace":6.5,"count":1},{"id":1765956246312,"date":"2025/9/12","name":"老丁","type":"跑步","distance":6.2,"pace":7,"count":1},{"id":1765956246313,"date":"2025/9/12","name":"老戴","type":"跑步","distance":10.2,"pace":6.1,"count":1},{"id":1765956246314,"date":"2025/9/12","name":"李尚","type":"跑步","distance":3,"pace":7.5,"count":1},{"id":1765956246315,"date":"2025/9/12","name":"赵威","type":"跑步","distance":3.7,"pace":9,"count":1},{"id":1765956246316,"date":"2025/9/13","name":"新华","type":"跑步","distance":9.7,"pace":10,"count":1},{"id":1765956246317,"date":"2025/9/19","name":"范教练","type":"力量","distance":0,"pace":0,"count":5},{"id":1765956246318,"date":"2025/9/13","name":"贝贝","type":"跑步","distance":5.3,"pace":6.5,"count":1},{"id":1765956246319,"date":"2025/9/13","name":"华仔","type":"跑步","distance":3.1,"pace":7.6,"count":1},{"id":1765956246320,"date":"2025/9/13","name":"老戴","type":"跑步","distance":25.2,"pace":6.3,"count":1},{"id":1765956246322,"date":"2025/9/13","name":"小黄队","type":"跑步","distance":6.1,"pace":6.5,"count":1},{"id":1765956246323,"date":"2025/9/13","name":"焕雄","type":"跑步","distance":4.1,"pace":6.3,"count":1},{"id":1765956246324,"date":"2025/9/13","name":"茂哥","type":"跑步","distance":7.1,"pace":6.5,"count":1},{"id":1765956246325,"date":"2025/9/14","name":"焕雄","type":"跑步","distance":3.2,"pace":6.2,"count":1},{"id":1765956246326,"date":"2025/9/14","name":"大鹏","type":"跑步","distance":3.2,"pace":11.2,"count":1},{"id":1765956246327,"date":"2025/9/14","name":"贝贝","type":"跑步","distance":6.1,"pace":6.6,"count":1},{"id":1765956246328,"date":"2025/9/15","name":"焕雄","type":"跑步","distance":4.1,"pace":7.3,"count":1},{"id":1765956246329,"date":"2025/9/16","name":"赵威","type":"跑步","distance":5,"pace":6.2,"count":1},{"id":1765956246330,"date":"2025/9/16","name":"茂哥","type":"跑步","distance":5.1,"pace":6.5,"count":1},{"id":1765956246331,"date":"2025/9/16","name":"小黄队","type":"跑步","distance":4.7,"pace":7.2,"count":1},{"id":1765956246332,"date":"2025/9/16","name":"老丁","type":"跑步","distance":3.4,"pace":7.2,"count":1},{"id":1765956246333,"date":"2025/9/16","name":"老戴","type":"跑步","distance":7.2,"pace":6.2,"count":1},{"id":1765956246334,"date":"2025/9/17","name":"新华","type":"跑步","distance":3.3,"pace":6.2,"count":1},{"id":1765956246335,"date":"2025/9/17","name":"焕雄","type":"跑步","distance":3.1,"pace":6.1,"count":1},{"id":1765956246336,"date":"2025/9/17","name":"茂哥","type":"跑步","distance":3.5,"pace":7,"count":1},{"id":1765956246337,"date":"2025/9/17","name":"老丁","type":"跑步","distance":4.9,"pace":7.6,"count":1},{"id":1765956246338,"date":"2025/9/18","name":"老戴","type":"跑步","distance":8.8,"pace":5.5,"count":1},{"id":1765956246339,"date":"2025/9/19","name":"老丁","type":"跑步","distance":6.7,"pace":8.4,"count":1},{"id":1765956246340,"date":"2025/9/19","name":"老黄队","type":"跑步","distance":3.1,"pace":6.4,"count":1},{"id":1765956246341,"date":"2025/9/19","name":"新华","type":"跑步","distance":3.8,"pace":6.4,"count":1},{"id":1765956246342,"date":"2025/9/20","name":"赵威","type":"跑步","distance":3,"pace":8.2,"count":1},{"id":1765956246343,"date":"2025/9/20","name":"范教练","type":"跑步","distance":3.1,"pace":9,"count":1},{"id":1765956246344,"date":"2025/9/20","name":"老戴","type":"跑步","distance":9.2,"pace":6.3,"count":1},{"id":1765956246345,"date":"2025/9/20","name":"焕雄","type":"跑步","distance":3.1,"pace":5.2,"count":1},{"id":1765956246346,"date":"2025/9/20","name":"大鹏","type":"跑步","distance":8.5,"pace":7.3,"count":1},{"id":1765956246347,"date":"2025/9/20","name":"老丁","type":"跑步","distance":7.5,"pace":9.5,"count":1},{"id":1765956246348,"date":"2025/9/21","name":"老戴","type":"跑步","distance":42.2,"pace":5.4,"count":1},{"id":1765956246349,"date":"2025/9/21","name":"贝贝","type":"跑步","distance":5.6,"pace":6.6,"count":1},{"id":1765956246350,"date":"2025/9/21","name":"焕雄","type":"跑步","distance":3.2,"pace":6,"count":1},{"id":1765956246351,"date":"2025/9/21","name":"老黄队","type":"跑步","distance":3,"pace":6.2,"count":1},{"id":1765956246353,"date":"2025/9/22","name":"茂哥","type":"跑步","distance":6.1,"pace":6.5,"count":1},{"id":1765956246354,"date":"2025/9/22","name":"老丁","type":"跑步","distance":5.7,"pace":10.1,"count":1},{"id":1765956246355,"date":"2025/9/22","name":"大鹏","type":"跑步","distance":5.3,"pace":5.2,"count":1},{"id":1765956246356,"date":"2025/9/23","name":"老黄队","type":"跑步","distance":5,"pace":6.2,"count":1},{"id":1765956246357,"date":"2025/9/23","name":"华仔","type":"跑步","distance":5.1,"pace":9.3,"count":1},{"id":1765956246358,"date":"2025/9/24","name":"新华","type":"跑步","distance":5.2,"pace":6.3,"count":1},{"id":1765956246359,"date":"2025/9/25","name":"老丁","type":"跑步","distance":3.7,"pace":9.1,"count":1},{"id":1765956246360,"date":"2025/9/25","name":"小黄队","type":"跑步","distance":6.1,"pace":7.1,"count":1},{"id":1765956246361,"date":"2025/9/23","name":"李尚","type":"跑步","distance":3.4,"pace":7.5,"count":1},{"id":1765956246362,"date":"2025/9/25","name":"大鹏","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246363,"date":"2025/9/25","name":"茂哥","type":"跑步","distance":6.1,"pace":6.5,"count":1},{"id":1765956246364,"date":"2025/9/26","name":"老戴","type":"跑步","distance":10,"pace":6.2,"count":1},{"id":1765956246365,"date":"2025/9/26","name":"晓旭","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246366,"date":"2025/9/26","name":"范教练","type":"力量","distance":0,"pace":0,"count":6},{"id":1765956246367,"date":"2025/9/27","name":"赵威","type":"跑步","distance":3.3,"pace":8.3,"count":1},{"id":1765956246368,"date":"2025/9/27","name":"晓旭","type":"跑步","distance":3.2,"pace":7.7,"count":1},{"id":1765956246369,"date":"2025/9/27","name":"老戴","type":"跑步","distance":15,"pace":6.2,"count":1},{"id":1765956246370,"date":"2025/9/27","name":"老黄队","type":"跑步","distance":5.1,"pace":6.2,"count":1},{"id":1765956246371,"date":"2025/9/28","name":"老丁","type":"跑步","distance":5.8,"pace":9.6,"count":1},{"id":1765956246372,"date":"2025/9/28","name":"焕雄","type":"跑步","distance":3.6,"pace":11.1,"count":1},{"id":1765956246373,"date":"2025/9/29","name":"茂哥","type":"跑步","distance":6,"pace":6.5,"count":1},{"id":1765956246374,"date":"2025/9/29","name":"老丁","type":"跑步","distance":5.8,"pace":7.3,"count":1},{"id":1765956246375,"date":"2025/9/29","name":"新华","type":"跑步","distance":5.2,"pace":6.2,"count":1},{"id":1765956246376,"date":"2025/9/30","name":"晓旭","type":"跑步","distance":3,"pace":9.2,"count":1},{"id":1765956246377,"date":"2025/9/3","name":"晓旭","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246378,"date":"2025/9/3","name":"范教练","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246380,"date":"2025/10/1","name":"老戴","type":"跑步","distance":7,"pace":6.3,"count":1},{"id":1765956246381,"date":"2025/10/1","name":"老黄队","type":"跑步","distance":5,"pace":6.2,"count":1},{"id":1765956246382,"date":"2025/10/1","name":"小黄队","type":"跑步","distance":5,"pace":6.6,"count":1},{"id":1765956246383,"date":"2025/10/1","name":"焕雄","type":"跑步","distance":3.1,"pace":6.4,"count":1},{"id":1765956246384,"date":"2025/10/2","name":"赵威","type":"跑步","distance":3.9,"pace":6.2,"count":1},{"id":1765956246385,"date":"2025/10/3","name":"贝贝","type":"跑步","distance":3.7,"pace":6.6,"count":1},{"id":1765956246386,"date":"2025/10/3","name":"茂哥","type":"跑步","distance":5.1,"pace":6.5,"count":1},{"id":1765956246387,"date":"2025/10/3","name":"老戴","type":"跑步","distance":12,"pace":6.2,"count":1},{"id":1765956246388,"date":"2025/10/3","name":"焕雄","type":"跑步","distance":3.1,"pace":6.3,"count":1},{"id":1765956246389,"date":"2025/10/3","name":"新华","type":"跑步","distance":5.2,"pace":6.3,"count":1},{"id":1765956246390,"date":"2025/10/3","name":"老黄队","type":"跑步","distance":5,"pace":6.4,"count":1},{"id":1765956246391,"date":"2025/10/3","name":"李尚","type":"跑步","distance":3.1,"pace":7.2,"count":1},{"id":1765956246392,"date":"2025/10/4","name":"华仔","type":"跑步","distance":5.2,"pace":5.5,"count":1},{"id":1765956246393,"date":"2025/10/4","name":"贝贝","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246394,"date":"2025/10/4","name":"大鹏","type":"跑步","distance":11,"pace":7.5,"count":1},{"id":1765956246395,"date":"2025/10/5","name":"焕雄","type":"跑步","distance":3.1,"pace":6.2,"count":1},{"id":1765956246396,"date":"2025/10/5","name":"茂哥","type":"跑步","distance":6.2,"pace":6.3,"count":1},{"id":1765956246397,"date":"2025/10/6","name":"大鹏","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246398,"date":"2025/10/6","name":"老黄队","type":"跑步","distance":3.2,"pace":6.2,"count":1},{"id":1765956246402,"date":"2025/10/7","name":"华仔","type":"跑步","distance":4.2,"pace":6.5,"count":1},{"id":1765956246403,"date":"2025/10/7","name":"小黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246404,"date":"2025/10/7","name":"茂哥","type":"跑步","distance":6.7,"pace":6.5,"count":1},{"id":1765956246405,"date":"2025/10/8","name":"贝贝","type":"跑步","distance":5.6,"pace":7.4,"count":1},{"id":1765956246406,"date":"2025/10/8","name":"老丁","type":"跑步","distance":6,"pace":10,"count":1},{"id":1765956246407,"date":"2025/10/8","name":"老戴","type":"跑步","distance":10.5,"pace":6.2,"count":1},{"id":1765956246408,"date":"2025/10/8","name":"老黄队","type":"跑步","distance":5.1,"pace":6.3,"count":1},{"id":1765956246409,"date":"2025/10/9","name":"茂哥","type":"跑步","distance":6.2,"pace":6.4,"count":1},{"id":1765956246410,"date":"2025/10/10","name":"赵威","type":"跑步","distance":3.2,"pace":6.2,"count":1},{"id":1765956246411,"date":"2025/10/10","name":"范教练","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246412,"date":"2025/10/11","name":"老丁","type":"跑步","distance":6,"pace":8.3,"count":1},{"id":1765956246413,"date":"2025/10/11","name":"焕雄","type":"跑步","distance":3.1,"pace":6.5,"count":1},{"id":1765956246414,"date":"2025/10/12","name":"老丁","type":"跑步","distance":6.2,"pace":10.2,"count":1},{"id":1765956246415,"date":"2025/10/12","name":"老戴","type":"跑步","distance":5,"pace":6,"count":1},{"id":1765956246416,"date":"2025/10/13","name":"老丁","type":"跑步","distance":5.4,"pace":7,"count":1},{"id":1765956246417,"date":"2025/10/13","name":"茂哥","type":"跑步","distance":5.1,"pace":6.3,"count":1},{"id":1765956246418,"date":"2025/10/13","name":"新华","type":"跑步","distance":5.2,"pace":6.3,"count":1},{"id":1765956246419,"date":"2025/10/14","name":"老戴","type":"跑步","distance":7.2,"pace":5.4,"count":1},{"id":1765956246420,"date":"2025/10/14","name":"焕雄","type":"跑步","distance":3.1,"pace":7.5,"count":1},{"id":1765956246421,"date":"2025/10/15","name":"老丁","type":"跑步","distance":7,"pace":11.3,"count":1},{"id":1765956246422,"date":"2025/10/15","name":"老戴","type":"跑步","distance":10,"pace":5.4,"count":1},{"id":1765956246423,"date":"2025/10/15","name":"茂哥","type":"跑步","distance":5.2,"pace":6.5,"count":1},{"id":1765956246424,"date":"2025/10/15","name":"华仔","type":"跑步","distance":6.3,"pace":6.1,"count":1},{"id":1765956246426,"date":"2025/10/15","name":"小黄队","type":"跑步","distance":6.3,"pace":6.5,"count":1},{"id":1765956246427,"date":"2025/10/15","name":"大鹏","type":"跑步","distance":9.3,"pace":8.5,"count":1},{"id":1765956246428,"date":"2025/10/16","name":"赵威","type":"跑步","distance":3.3,"pace":6.2,"count":1},{"id":1765956246429,"date":"2025/10/16","name":"新华","type":"跑步","distance":5.2,"pace":6.1,"count":1},{"id":1765956246430,"date":"2025/10/16","name":"老黄队","type":"跑步","distance":3.4,"pace":6.4,"count":1},{"id":1765956246431,"date":"2025/10/16","name":"老戴","type":"跑步","distance":7.5,"pace":5.4,"count":1},{"id":1765956246432,"date":"2025/10/17","name":"老丁","type":"跑步","distance":10.7,"pace":10,"count":1},{"id":1765956246433,"date":"2025/10/17","name":"范教练","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246434,"date":"2025/10/17","name":"茂哥","type":"跑步","distance":5.1,"pace":6.3,"count":1},{"id":1765956246435,"date":"2025/10/19","name":"赵威","type":"跑步","distance":5.3,"pace":6.2,"count":1},{"id":1765956246436,"date":"2025/10/19","name":"贝贝","type":"跑步","distance":3.3,"pace":7.6,"count":1},{"id":1765956246437,"date":"2025/10/18","name":"小黄队","type":"跑步","distance":5.2,"pace":7.1,"count":1},{"id":1765956246438,"date":"2025/10/18","name":"老黄队","type":"跑步","distance":3.1,"pace":5.6,"count":1},{"id":1765956246439,"date":"2025/10/18","name":"焕雄","type":"跑步","distance":3.2,"pace":6.1,"count":1},{"id":1765956246440,"date":"2025/10/19","name":"老戴","type":"跑步","distance":42.8,"pace":5.4,"count":1},{"id":1765956246441,"date":"2025/10/19","name":"老黄队","type":"跑步","distance":3.7,"pace":6.2,"count":1},{"id":1765956246442,"date":"2025/10/19","name":"茂哥","type":"跑步","distance":5.1,"pace":6.4,"count":1},{"id":1765956246443,"date":"2025/10/20","name":"老黄队","type":"跑步","distance":3.5,"pace":6.2,"count":1},{"id":1765956246444,"date":"2025/10/20","name":"老戴","type":"跑步","distance":5.6,"pace":6.2,"count":1},{"id":1765956246445,"date":"2025/10/21","name":"贝贝","type":"跑步","distance":4.1,"pace":6.4,"count":1},{"id":1765956246446,"date":"2025/10/21","name":"老丁","type":"跑步","distance":5,"pace":9.2,"count":1},{"id":1765956246447,"date":"2025/10/21","name":"茂哥","type":"跑步","distance":6.7,"pace":6.3,"count":1},{"id":1765956246448,"date":"2025/10/21","name":"新华","type":"跑步","distance":5.2,"pace":6.3,"count":1},{"id":1765956246449,"date":"2025/10/21","name":"老黄队","type":"跑步","distance":3.3,"pace":6.3,"count":1},{"id":1765956246450,"date":"2025/10/22","name":"焕雄","type":"跑步","distance":3.1,"pace":8.6,"count":1},{"id":1765956246451,"date":"2025/10/22","name":"贝贝","type":"跑步","distance":3.2,"pace":6.3,"count":1},{"id":1765956246452,"date":"2025/10/22","name":"老戴","type":"跑步","distance":5.3,"pace":5.4,"count":1},{"id":1765956246453,"date":"2025/10/22","name":"大鹏","type":"跑步","distance":7.6,"pace":9,"count":1},{"id":1765956246454,"date":"2025/10/23","name":"茂哥","type":"跑步","distance":6,"pace":6,"count":1},{"id":1765956246455,"date":"2025/10/23","name":"老戴","type":"跑步","distance":10.5,"pace":5.4,"count":1},{"id":1765956246456,"date":"2025/10/23","name":"华仔","type":"跑步","distance":5,"pace":6.2,"count":1},{"id":1765956246457,"date":"2025/10/24","name":"老丁","type":"跑步","distance":5.2,"pace":9.6,"count":1},{"id":1765956246458,"date":"2025/10/24","name":"老黄队","type":"跑步","distance":5.1,"pace":6.2,"count":1},{"id":1765956246459,"date":"2025/10/24","name":"焕雄","type":"跑步","distance":3.1,"pace":6.4,"count":1},{"id":1765956246460,"date":"2025/10/24","name":"范教练","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246461,"date":"2025/10/25","name":"赵威","type":"跑步","distance":3,"pace":8.6,"count":1},{"id":1765956246462,"date":"2025/10/25","name":"老戴","type":"跑步","distance":3.6,"pace":12.5,"count":1},{"id":1765956246463,"date":"2025/10/25","name":"老黄队","type":"跑步","distance":3.9,"pace":5.6,"count":1},{"id":1765956246464,"date":"2025/10/25","name":"茂哥","type":"跑步","distance":5.1,"pace":6.4,"count":1},{"id":1765956246466,"date":"2025/10/25","name":"贝贝","type":"跑步","distance":5,"pace":6,"count":1},{"id":1765956246467,"date":"2025/10/25","name":"大鹏","type":"跑步","distance":4,"pace":7.4,"count":1},{"id":1765956246468,"date":"2025/10/25","name":"小黄队","type":"跑步","distance":5.2,"pace":6.4,"count":1},{"id":1765956246469,"date":"2025/10/26","name":"老丁","type":"跑步","distance":3.3,"pace":10.3,"count":1},{"id":1765956246470,"date":"2025/10/26","name":"老戴","type":"跑步","distance":43,"pace":5.7,"count":1},{"id":1765956246471,"date":"2025/10/26","name":"老黄队","type":"跑步","distance":7.4,"pace":6.3,"count":1},{"id":1765956246472,"date":"2025/10/27","name":"茂哥","type":"跑步","distance":5,"pace":6.4,"count":1},{"id":1765956246473,"date":"2025/10/27","name":"贝贝","type":"跑步","distance":3.5,"pace":6.5,"count":1},{"id":1765956246474,"date":"2025/10/28","name":"老戴","type":"跑步","distance":10,"pace":6.2,"count":1},{"id":1765956246475,"date":"2025/10/29","name":"老黄队","type":"跑步","distance":5.4,"pace":6.1,"count":1},{"id":1765956246476,"date":"2025/10/29","name":"赵威","type":"跑步","distance":3.5,"pace":6.2,"count":1},{"id":1765956246477,"date":"2025/10/29","name":"老戴","type":"跑步","distance":7.8,"pace":5.3,"count":1},{"id":1765956246478,"date":"2025/10/30","name":"茂哥","type":"跑步","distance":5.1,"pace":6.4,"count":1},{"id":1765956246479,"date":"2025/10/30","name":"老黄队","type":"跑步","distance":3.6,"pace":5.5,"count":1},{"id":1765956246480,"date":"2025/10/30","name":"老丁","type":"跑步","distance":6.1,"pace":11.3,"count":1},{"id":1765956246481,"date":"2025/10/30","name":"老戴","type":"跑步","distance":8.7,"pace":6.1,"count":1},{"id":1765956246482,"date":"2025/10/30","name":"老戴","type":"跑步","distance":6.7,"pace":6.4,"count":1},{"id":1765956246483,"date":"2025/10/31","name":"新华","type":"跑步","distance":5.2,"pace":6.4,"count":1},{"id":1765956246484,"date":"2025/10/31","name":"小黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246485,"date":"2025/10/31","name":"范教练","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246486,"date":"2025/11/1","name":"赵威","type":"跑步","distance":4.3,"pace":9.1,"count":1},{"id":1765956246487,"date":"2025/11/1","name":"焕雄","type":"跑步","distance":3,"pace":9.5,"count":1},{"id":1765956246488,"date":"2025/11/3","name":"茂哥","type":"跑步","distance":5,"pace":6.5,"count":1},{"id":1765956246489,"date":"2025/11/4","name":"赵威","type":"跑步","distance":3.2,"pace":6.2,"count":1},{"id":1765956246490,"date":"2025/11/5","name":"贝贝","type":"跑步","distance":3.7,"pace":7.1,"count":1},{"id":1765956246491,"date":"2025/11/5","name":"老丁","type":"跑步","distance":5.2,"pace":10.3,"count":1},{"id":1765956246492,"date":"2025/11/5","name":"茂哥","type":"跑步","distance":5.1,"pace":6.3,"count":1},{"id":1765956246493,"date":"2025/11/5","name":"冯文琪","type":"跑步","distance":3.2,"pace":8.5,"count":1},{"id":1765956246494,"date":"2025/11/5","name":"焕雄","type":"跑步","distance":3,"pace":6.4,"count":1},{"id":1765956246495,"date":"2025/11/6","name":"小黄队","type":"跑步","distance":6.2,"pace":7,"count":1},{"id":1765956246496,"date":"2025/11/6","name":"老黄队","type":"跑步","distance":3.3,"pace":6.2,"count":1},{"id":1765956246497,"date":"2025/11/6","name":"大鹏","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246498,"date":"2025/11/7","name":"老丁","type":"跑步","distance":5,"pace":10,"count":1},{"id":1765956246499,"date":"2025/11/7","name":"茂哥","type":"跑步","distance":5.3,"pace":6.4,"count":1},{"id":1765956246500,"date":"2025/11/7","name":"范教练","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246501,"date":"2025/11/8","name":"贝贝","type":"跑步","distance":3.3,"pace":8.2,"count":1},{"id":1765956246502,"date":"2025/11/8","name":"赵威","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246503,"date":"2025/11/8","name":"新华","type":"跑步","distance":5,"pace":6,"count":1},{"id":1765956246504,"date":"2025/11/8","name":"大鹏","type":"跑步","distance":7.2,"pace":9.3,"count":1},{"id":1765956246506,"date":"2025/11/9","name":"冯文琪","type":"跑步","distance":3.1,"pace":8,"count":1},{"id":1765956246507,"date":"2025/11/9","name":"茂哥","type":"跑步","distance":5,"pace":6.4,"count":1},{"id":1765956246508,"date":"2025/11/9","name":"小黄队","type":"跑步","distance":4.6,"pace":6.6,"count":1},{"id":1765956246509,"date":"2025/11/9","name":"贝贝","type":"跑步","distance":6.3,"pace":8.2,"count":1},{"id":1765956246510,"date":"2025/11/10","name":"老戴","type":"跑步","distance":10.2,"pace":5.5,"count":1},{"id":1765956246511,"date":"2025/11/10","name":"焕雄","type":"跑步","distance":3.5,"pace":6.3,"count":1},{"id":1765956246512,"date":"2025/11/11","name":"老丁","type":"跑步","distance":5.7,"pace":9,"count":1},{"id":1765956246513,"date":"2025/11/11","name":"茂哥","type":"跑步","distance":5,"pace":6.4,"count":1},{"id":1765956246514,"date":"2025/11/11","name":"冯文琪","type":"跑步","distance":3.2,"pace":9,"count":1},{"id":1765956246515,"date":"2025/11/12","name":"贝贝","type":"跑步","distance":6.3,"pace":8.2,"count":1},{"id":1765956246516,"date":"2025/11/12","name":"老丁","type":"跑步","distance":7.8,"pace":8,"count":1},{"id":1765956246517,"date":"2025/11/12","name":"大鹏","type":"跑步","distance":5.2,"pace":6.3,"count":1},{"id":1765956246518,"date":"2025/11/12","name":"老戴","type":"跑步","distance":10,"pace":5.3,"count":1},{"id":1765956246519,"date":"2025/11/12","name":"赵威","type":"跑步","distance":3.4,"pace":6.1,"count":1},{"id":1765956246520,"date":"2025/11/13","name":"贝贝","type":"跑步","distance":6.3,"pace":8.2,"count":1},{"id":1765956246521,"date":"2025/11/13","name":"老丁","type":"跑步","distance":5.5,"pace":10,"count":1},{"id":1765956246522,"date":"2025/11/13","name":"茂哥","type":"跑步","distance":5.2,"pace":6.5,"count":1},{"id":1765956246523,"date":"2025/11/13","name":"老黄队","type":"跑步","distance":5,"pace":6.5,"count":1},{"id":1765956246524,"date":"2025/11/13","name":"冯文琪","type":"跑步","distance":3.3,"pace":8,"count":1},{"id":1765956246525,"date":"2025/11/14","name":"老戴","type":"跑步","distance":7.5,"pace":6,"count":1},{"id":1765956246526,"date":"2025/11/14","name":"新华","type":"跑步","distance":5.7,"pace":6.3,"count":1},{"id":1765956246527,"date":"2025/11/14","name":"范教练","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246528,"date":"2025/11/15","name":"赵威","type":"跑步","distance":4,"pace":8.4,"count":1},{"id":1765956246529,"date":"2025/11/15","name":"茂哥","type":"跑步","distance":8.8,"pace":6.4,"count":1},{"id":1765956246530,"date":"2025/11/15","name":"老戴","type":"跑步","distance":10.8,"pace":5.2,"count":1},{"id":1765956246531,"date":"2025/11/15","name":"大鹏","type":"跑步","distance":3.9,"pace":8.3,"count":1},{"id":1765956246532,"date":"2025/11/15","name":"冯文琪","type":"跑步","distance":3.1,"pace":7,"count":1},{"id":1765956246533,"date":"2025/11/15","name":"焕雄","type":"跑步","distance":11.2,"pace":7,"count":1},{"id":1765956246534,"date":"2025/11/15","name":"茂哥","type":"跑步","distance":5.6,"pace":6.5,"count":1},{"id":1765956246535,"date":"2025/11/15","name":"冯文琪","type":"跑步","distance":3,"pace":8,"count":1},{"id":1765956246536,"date":"2025/11/15","name":"老丁","type":"跑步","distance":5.4,"pace":7.3,"count":1},{"id":1765956246537,"date":"2025/11/15","name":"老戴","type":"跑步","distance":8,"pace":5.3,"count":1},{"id":1765956246538,"date":"2025/11/15","name":"小黄队","type":"跑步","distance":5.5,"pace":6.5,"count":1},{"id":1765956246539,"date":"2025/11/15","name":"贝贝","type":"跑步","distance":3.7,"pace":6.1,"count":1},{"id":1765956246540,"date":"2025/11/15","name":"老丁","type":"跑步","distance":3.7,"pace":10,"count":1},{"id":1765956246541,"date":"2025/11/15","name":"新华","type":"跑步","distance":3.5,"pace":6.4,"count":1},{"id":1765956246542,"date":"2025/11/15","name":"老黄队","type":"跑步","distance":5,"pace":6.4,"count":1},{"id":1765956246544,"date":"2025/11/15","name":"老丁","type":"跑步","distance":5.6,"pace":7.1,"count":1},{"id":1765956246545,"date":"2025/11/15","name":"范教练","type":"力量","distance":0,"pace":0,"count":2},{"id":1765956246546,"date":"2025/11/22","name":"赵威","type":"跑步","distance":3.1,"pace":8.3,"count":1},{"id":1765956246547,"date":"2025/11/22","name":"贝贝","type":"跑步","distance":6.2,"pace":7.2,"count":1},{"id":1765956246548,"date":"2025/11/22","name":"贝贝","type":"跑步","distance":3.7,"pace":6.4,"count":1},{"id":1765956246549,"date":"2025/11/22","name":"老丁","type":"跑步","distance":4.7,"pace":9.4,"count":1},{"id":1765956246550,"date":"2025/11/22","name":"大鹏","type":"跑步","distance":5.4,"pace":5.2,"count":1},{"id":1765956246551,"date":"2025/11/22","name":"小黄队","type":"跑步","distance":5.3,"pace":6.6,"count":1},{"id":1765956246552,"date":"2025/11/22","name":"老丁","type":"跑步","distance":4.4,"pace":11.5,"count":1},{"id":1765956246553,"date":"2025/11/22","name":"新华","type":"跑步","distance":5.7,"pace":6.4,"count":1},{"id":1765956246554,"date":"2025/11/22","name":"冯文琪","type":"跑步","distance":3,"pace":7,"count":1},{"id":1765956246555,"date":"2025/11/22","name":"焕雄","type":"跑步","distance":3.1,"pace":6.3,"count":1},{"id":1765956246556,"date":"2025/11/22","name":"大鹏","type":"跑步","distance":4.7,"pace":12.6,"count":1},{"id":1765956246557,"date":"2025/11/22","name":"赵威","type":"跑步","distance":3.1,"pace":8.2,"count":1},{"id":1765956246558,"date":"2025/11/22","name":"贝贝","type":"跑步","distance":3.6,"pace":6.4,"count":1},{"id":1765956246559,"date":"2025/11/22","name":"冯文琪","type":"跑步","distance":3,"pace":9.5,"count":1},{"id":1765956246560,"date":"2025/11/22","name":"茂哥","type":"跑步","distance":5,"pace":8.3,"count":1},{"id":1765956246561,"date":"2025/11/22","name":"茂哥","type":"跑步","distance":3.2,"pace":8.6,"count":1},{"id":1765956246562,"date":"2025/11/22","name":"赵威","type":"跑步","distance":3.1,"pace":8.3,"count":1},{"id":1765956246563,"date":"2025/11/22","name":"贝贝","type":"跑步","distance":10,"pace":7.3,"count":1},{"id":1765956246564,"date":"2025/11/22","name":"老戴","type":"跑步","distance":21,"pace":5.4,"count":1},{"id":1765956246565,"date":"2025/11/22","name":"老黄队","type":"跑步","distance":5,"pace":6,"count":1},{"id":1765956246566,"date":"2025/11/22","name":"大鹏","type":"跑步","distance":4,"pace":15,"count":0},{"id":1765956246567,"date":"2025/11/22","name":"范教练","type":"力量","distance":0,"pace":0,"count":3},{"id":1765956246568,"date":"2025/11/29","name":"老丁","type":"跑步","distance":4.8,"pace":13.4,"count":0},{"id":1765956246569,"date":"2025/11/30","name":"老戴","type":"跑步","distance":42.2,"pace":6.1,"count":1},{"id":1765956246570,"date":"2025/11/30","name":"贝贝","type":"跑步","distance":4.1,"pace":6.3,"count":1},{"id":1765956246571,"date":"2025/11/29","name":"小黄队","type":"跑步","distance":4.6,"pace":7.1,"count":1},{"id":1765956246572,"date":"2025/11/29","name":"大鹏","type":"跑步","distance":5.8,"pace":10.3,"count":1},{"id":1765956246573,"date":"2025/11/29","name":"新华","type":"跑步","distance":5.7,"pace":6.5,"count":1},{"id":1765956246574,"date":"2025/11/29","name":"贝贝","type":"跑步","distance":3.2,"pace":7.3,"count":1},{"id":1765956246575,"date":"2025/12/1","name":"茂哥","type":"跑步","distance":5,"pace":6.3,"count":1},{"id":1765956246577,"date":"2025/12/1","name":"老丁","type":"跑步","distance":5.6,"pace":6.3,"count":1},{"id":1765956246578,"date":"2025/12/2","name":"赵威","type":"跑步","distance":3.6,"pace":6.2,"count":1},{"id":1765956246579,"date":"2025/12/2","name":"焕雄","type":"跑步","distance":4.5,"pace":6.2,"count":1},{"id":1765956246580,"date":"2025/12/3","name":"茂哥","type":"跑步","distance":5.1,"pace":6.5,"count":1},{"id":1765956246581,"date":"2025/12/3","name":"冯文琪","type":"跑步","distance":3.3,"pace":9.2,"count":1},{"id":1765956246582,"date":"2025/12/3","name":"贝贝","type":"跑步","distance":4,"pace":6.5,"count":1},{"id":1765956246583,"date":"2025/12/3","name":"大鹏","type":"跑步","distance":4,"pace":12,"count":1},{"id":1765956246584,"date":"2025/12/5","name":"老丁","type":"跑步","distance":5.5,"pace":9.2,"count":1},{"id":1765956246585,"date":"2025/12/5","name":"茂哥","type":"跑步","distance":5.1,"pace":6.5,"count":1},{"id":1765956246586,"date":"2025/11/5","name":"范教练","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246587,"date":"2025/12/7","name":"冯文琪","type":"跑步","distance":3,"pace":8.5,"count":1},{"id":1765956246588,"date":"2025/12/7","name":"大鹏","type":"跑步","distance":5.2,"pace":5.2,"count":1},{"id":1765956246589,"date":"2025/12/7","name":"贝贝","type":"跑步","distance":5.2,"pace":7.3,"count":1},{"id":1765956246590,"date":"2025/12/6","name":"大鹏","type":"跑步","distance":6.4,"pace":9.1,"count":1},{"id":1765956246591,"date":"2025/12/7","name":"小黄队","type":"户外","distance":0,"pace":0,"count":1},{"id":1765956246592,"date":"2025/12/7","name":"老戴","type":"户外","distance":0,"pace":0,"count":1},{"id":1765956246593,"date":"2025/12/8","name":"老丁","type":"跑步","distance":5.7,"pace":7.6,"count":1},{"id":1765956246594,"date":"2025/12/8","name":"茂哥","type":"跑步","distance":5.1,"pace":3,"count":1},{"id":1765956246595,"date":"2025/12/8","name":"老戴","type":"跑步","distance":8,"pace":5.3,"count":1},{"id":1765956246596,"date":"2025/12/8","name":"焕雄","type":"跑步","distance":3.4,"pace":6.6,"count":1},{"id":1765956246597,"date":"2025/12/9","name":"贝贝","type":"跑步","distance":3.7,"pace":6.4,"count":1},{"id":1765956246598,"date":"2025/12/9","name":"老丁","type":"跑步","distance":10,"pace":9.6,"count":1},{"id":1765956246599,"date":"2025/12/9","name":"茂哥","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246600,"date":"2025/12/9","name":"老黄队","type":"跑步","distance":5,"pace":6.2,"count":1},{"id":1765956246601,"date":"2025/12/9","name":"华仔","type":"跑步","distance":3,"pace":7,"count":1},{"id":1765956246602,"date":"2025/12/10","name":"大鹏","type":"跑步","distance":3,"pace":13,"count":1},{"id":1765956246603,"date":"2025/12/10","name":"老丁","type":"跑步","distance":14,"pace":10,"count":1},{"id":1765956246604,"date":"2025/12/10","name":"老戴","type":"跑步","distance":10,"pace":6,"count":1},{"id":1765956246605,"date":"2025/12/11","name":"贝贝","type":"跑步","distance":3.7,"pace":6.2,"count":1},{"id":1765956246606,"date":"2025/12/11","name":"老丁","type":"跑步","distance":5.1,"pace":10.3,"count":1},{"id":1765956246607,"date":"2025/12/11","name":"茂哥","type":"跑步","distance":5.1,"pace":6.4,"count":1},{"id":1765956246608,"date":"2025/12/11","name":"新华","type":"跑步","distance":5.2,"pace":5.5,"count":1},{"id":1765956246609,"date":"2025/12/11","name":"老戴","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246610,"date":"2025/12/11","name":"小黄队","type":"跑步","distance":5.2,"pace":7.2,"count":1},{"id":1765956246611,"date":"2025/12/11","name":"老黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246612,"date":"2025/12/12","name":"贝贝","type":"跑步","distance":3.7,"pace":6.3,"count":1},{"id":1765956246613,"date":"2025/12/12","name":"老丁","type":"跑步","distance":5.6,"pace":10.5,"count":1},{"id":1765956246615,"date":"2025/12/12","name":"范教练","type":"力量","distance":0,"pace":0,"count":4},{"id":1765956246616,"date":"2025/12/13","name":"大鹏","type":"跑步","distance":5.3,"pace":5.3,"count":1},{"id":1765956246617,"date":"2025/12/13","name":"老戴","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246618,"date":"2025/12/13","name":"老丁","type":"跑步","distance":3.4,"pace":9.6,"count":1},{"id":1765956246619,"date":"2025/12/13","name":"老黄队","type":"力量","distance":0,"pace":0,"count":1},{"id":1765956246620,"date":"2025/12/13","name":"贝贝","type":"跑步","distance":6.2,"pace":6.5,"count":1},{"id":1765956246621,"date":"2025/12/13","name":"焕雄","type":"跑步","distance":3,"pace":7,"count":1},{"id":1765956246622,"date":"2025/12/13","name":"冯文琪","type":"跑步","distance":3.2,"pace":11,"count":1},{"id":1765956246623,"date":"2025/12/13","name":"大鹏","type":"跑步","distance":3.9,"pace":11.6,"count":1},{"id":1765956246624,"date":"2025/12/14","name":"老戴","type":"跑步","distance":9.7,"pace":4.4,"count":1},{"id":1765956246625,"date":"2025/12/14","name":"赵威","type":"跑步","distance":3,"pace":7.4,"count":1},{"id":1765956246626,"date":"2025/12/14","name":"贝贝","type":"户外","distance":0,"pace":0,"count":1},{"id":1765956246627,"date":"2025/12/14","name":"冯文琪","type":"跑步","distance":3,"pace":8,"count":1},{"id":1765956246628,"date":"2025/12/14","name":"老黄队","type":"跑步","distance":6,"pace":7.6,"count":1},{"id":1765956246629,"date":"2025/12/15","name":"贝贝","type":"跑步","distance":3.3,"pace":7.3,"count":1},{"id":1765956246630,"date":"2025/12/15","name":"老丁","type":"跑步","distance":6,"pace":7.3,"count":1}];
+        const tab = ref('dist');
+        const filter = ref({mode:'month', month:new Date().getMonth()+1});
+        const user = ref('');
+        let chart = null;
+        const users = computed(()=>[...new Set(data.map(r=>r.name))]);
+        const subData = computed(()=> data.filter(r=> filter.value.mode=='all' ? true : (new Date(r.date).getMonth()+1)==filter.value.month));
+        
+        const rank = computed(()=>{
+            const m={};
+            subData.value.forEach(r=>{
+                if(!m[r.name]) m[r.name]={name:r.name, count:0, distance:0, pSum:0, rCount:0};
+                m[r.name].count += (r.count ? parseInt(r.count) : 1);
+                if(r.distance) m[r.name].distance += parseFloat(r.distance);
+                if(r.type=='跑步'&&r.pace) {m[r.name].pSum+=r.pace; m[r.name].rCount++;}
             });
+            const arr=Object.values(m);
+            return {
+                dist: [...arr].sort((a,b)=>b.distance-a.distance).slice(0,10),
+                count: [...arr].sort((a,b)=>b.count-a.count).slice(0,10),
+                pace: [...arr].filter(i=>i.rCount>0).map(i=>({...i, pace:(i.pSum/i.rCount).toFixed(2)})).sort((a,b)=>a.pace-b.pace).slice(0,10)
+            };
+        });
+        const getCls = (i) => i===0?'rank-1':(i===1?'rank-2':(i===2?'rank-3':'rank-other'));
+        
+        // --- 核心修改：三轴图表逻辑 ---
+        watch(user, (u)=>{ if(u) nextTick(()=>{ 
+            if(chart) chart.dispose();
+            chart=echarts.init(document.getElementById('chart'));
+            const ms=[], ds=[], ps=[], cs=[];
+            for(let i=5;i>=0;i--){
+                const d=new Date(); d.setMonth(d.getMonth()-i);
+                const m=d.getMonth()+1, y=d.getFullYear();
+                ms.push(m+'月');
+                const rs=data.filter(r=>new Date(r.date).getMonth()+1==m && new Date(r.date).getFullYear()==y && r.name==u);
+                
+                ds.push(rs.reduce((a,b)=>a+(b.distance||0),0).toFixed(1)); // 距离
+                
+                // 次数 (如果count为空则加1)
+                const countSum = rs.reduce((a,b)=> a + (b.count ? parseInt(b.count) : 1), 0);
+                cs.push(countSum);
 
-            // --- 计算属性 (逻辑不变) ---
-            const allUsers = computed(() => [...new Set(records.value.map(r => r.name))]);
-            const recentRecords = computed(() => [...records.value].sort((a, b) => b.id - a.id).slice(0, 20));
-            const filteredData = computed(() => records.value.filter(r => {
-                if (filter.value.mode === 'all') return true;
-                return (new Date(r.date).getMonth() + 1) == filter.value.month;
-            }));
-            const rankings = computed(() => {
-                const map = {};
-                filteredData.value.forEach(r => {
-                    if (!map[r.name]) map[r.name] = { name: r.name, count: 0, distance: 0, paceSum: 0, runCount: 0 };
-                    map[r.name].count += 1;
-                    if (r.distance) map[r.name].distance += parseFloat(r.distance);
-                    if (r.type === '跑步' && r.pace) { map[r.name].paceSum += parseFloat(r.pace); map[r.name].runCount += 1; }
-                });
-                const list = Object.values(map);
-                return {
-                    count: [...list].sort((a, b) => b.count - a.count).slice(0, 10),
-                    distance: [...list].sort((a, b) => b.distance - a.distance).slice(0, 10),
-                    pace: [...list].filter(i => i.runCount > 0).map(i => ({ ...i, pace: (i.paceSum / i.runCount).toFixed(2) })).sort((a, b) => a.pace - b.pace).slice(0, 10)
-                };
+                const runs=rs.filter(r=>r.type=='跑步'&&r.pace);
+                ps.push(runs.length?(runs.reduce((a,b)=>a+b.pace,0)/runs.length).toFixed(2):0); // 配速
+            }
+            
+            chart.setOption({
+                color: ['#0d6efd', '#198754', '#dc3545'], // 蓝、绿、红
+                tooltip: {trigger:'axis'},
+                legend: {data:['距离','次数','配速'], bottom:0},
+                grid: {left:40, right:50, top:30, bottom:30}, // 右侧留出空间给第三个轴
+                xAxis: {data:ms},
+                yAxis: [
+                    {type:'value', name:'km', position:'left', alignTicks:true},
+                    {type:'value', name:'次', position:'right', alignTicks:true, splitLine:{show:false}},
+                    {type:'value', name:'配速', position:'right', offset:30, inverse:true, splitLine:{show:false}, axisLabel:{show:false}} // 配速轴隐藏文字防止拥挤，看tooltip即可
+                ],
+                series: [
+                    {name:'距离', type:'bar', data:ds, yAxisIndex:0},
+                    {name:'次数', type:'line', data:cs, yAxisIndex:1, symbol:'circle', lineStyle:{type:'dashed'}},
+                    {name:'配速', type:'line', data:ps, yAxisIndex:2}
+                ]
             });
-
-            // --- 核心：导出发布文件 ---
-            const exportHtmlFile = () => {
-                const currentHtml = document.documentElement.outerHTML;
-                const dataJson = JSON.stringify(records.value);
-                
-                // 找到数据注入点，替换内容
-                // 我们在 body 底部放一个 script 标签专门存数据
-                let newHtml = currentHtml;
-                
-                // 如果已经有数据块，替换它；如果没有，插入它
-                if (newHtml.includes('id="embedded-data"')) {
-                    newHtml = newHtml.replace(/<script type="application\/json" id="embedded-data">[\s\S]*?<\/script>/, 
-                        `<script type="application/json" id="embedded-data">${dataJson}<\/script>`);
-                } else {
-                    // 插入到 body 结束标签前
-                    newHtml = newHtml.replace('</body>', `<script type="application/json" id="embedded-data">${dataJson}<\/script></body>`);
-                }
-
-                // 强制把 isAdminMode 设为 false，这样群友打开看不到录入按钮
-                // (这里通过不修改代码逻辑，而是依靠 onMounted 里的检测逻辑，只要 embedded-data 有值，就默认 false)
-
-                const blob = new Blob([newHtml], { type: 'text/html' });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = "index.html"; // 建议下载为 index.html
-                link.click();
-                alert("发布文件已生成！\n请将下载的 index.html 上传到 Gitee Pages 或 GitHub Pages，\n然后把链接发到群里。");
-            };
-
-            // --- 常规方法 ---
-            const downloadTemplate = () => {
-                const csv = "打卡日期,姓名,打卡形式(跑步/力量/户外),距离(km),配速(分.秒)\n2025-12-01,张三,跑步,5.0,6.30";
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(new Blob(["\ufeff"+csv], {type: 'text/csv;charset=utf-8;'}));
-                link.download = "template.csv";
-                link.click();
-            };
-            const handleFileUpload = (e) => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const lines = ev.target.result.split('\n');
-                    let count = 0;
-                    for(let i=1; i<lines.length; i++) {
-                        const c = lines[i].split(',');
-                        if(c.length>=3 && c[0] && c[1]) {
-                            records.value.push({
-                                id: Date.now()+i, name: c[1].trim(), date: c[0].trim(), type: c[2].trim(),
-                                distance: parseFloat(c[3]||0), pace: parseFloat(c[4]||0)
-                            });
-                            count++;
-                        }
-                    }
-                    localStorage.setItem('run_records', JSON.stringify(records.value));
-                    alert(`导入 ${count} 条`);
-                };
-                if(e.target.files[0]) reader.readAsText(e.target.files[0]);
-                e.target.value = '';
-            };
-            const addRecord = () => {
-                records.value.push({ ...form.value, id: Date.now(), distance: parseFloat(form.value.distance||0), pace: parseFloat(form.value.pace||0) });
-                localStorage.setItem('run_records', JSON.stringify(records.value));
-                alert('已录入');
-            };
-            const clearData = () => { if(confirm('清空?')) { records.value=[]; localStorage.setItem('run_records', '[]'); } };
-            const getRankClass = (i) => i===0?'rank-1':(i===1?'rank-2':(i===2?'rank-3':'rank-other'));
-
-            // --- 图表 ---
-            watch(selectedUser, (u) => { if(u) nextTick(() => renderChart(u)); });
-            const renderChart = (user) => {
-                const dom = document.getElementById('trendChart');
-                if(!dom) return;
-                if(chartInstance) chartInstance.dispose();
-                chartInstance = echarts.init(dom);
-                // 简化版图表配置
-                const months=[], dDist=[], dPace=[];
-                for(let i=5; i>=0; i--) { // 手机端只显示近6个月，防止太挤
-                    const d=new Date(); d.setMonth(d.getMonth()-i);
-                    const m=d.getMonth()+1; const y=d.getFullYear();
-                    months.push(m+'月');
-                    const rs = records.value.filter(r=>new Date(r.date).getMonth()+1===m && new Date(r.date).getFullYear()===y && r.name===user);
-                    dDist.push(rs.reduce((a,b)=>a+(b.distance||0),0).toFixed(1));
-                    const runs = rs.filter(r=>r.type==='跑步'&&r.pace>0);
-                    dPace.push(runs.length ? (runs.reduce((a,b)=>a+b.pace,0)/runs.length).toFixed(2) : 0);
-                }
-                chartInstance.setOption({
-                    grid: { left: 40, right: 40, bottom: 20, top: 40 },
-                    tooltip: { trigger: 'axis' },
-                    legend: { data: ['距离', '配速'], bottom: 0 },
-                    xAxis: { data: months },
-                    yAxis: [{ type: 'value', name: 'km' }, { type: 'value', name: '配速', inverse: true }],
-                    series: [{ name: '距离', type: 'bar', data: dDist, itemStyle:{color:'#0d6efd'} }, { name: '配速', type: 'line', yAxisIndex: 1, data: dPace, itemStyle:{color:'#dc3545'} }]
-                });
-            };
-
-            return { isAdminMode, currentView, activeTab, filter, rankings, selectedUser, allUsers, form, addRecord, recentRecords, clearData, getRankClass, downloadTemplate, handleFileUpload, exportHtmlFile, records };
-        }
-    }).mount('#app');
-</script>
-
-<!-- 数据注入占位符：发布时数据会存在这里 -->
-<script type="application/json" id="embedded-data"></script>
-
-</body>
-</html>
+        })});
+        return {tab,filter,user,users,rank,getCls}
+    }
+}).mount('#app');
+</script></body></html>
