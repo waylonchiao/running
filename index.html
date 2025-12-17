@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🏃‍♂️ 跑团月度成绩单</title>
+    
+    <!-- 微信分享时的缩略图建议（虽然现在微信抓取规则变了，但保留一个隐藏图是个好习惯） -->
+    <div style="display:none;"><img src="https:[EMAIL]/icons/png/512/384/384153.png" alt="icon"></div>
+
+    <link href="https:[EMAIL]/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https:[EMAIL]/font/bootstrap-icons.css">
+    
+    <style>
+        body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; touch-action: manipulation; }
+        .container { max-width: 800px; } /* 手机端限制最大宽度，防止平板上太宽 */
+        .card { border: none; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        .card-header { background-color: #fff; border-bottom: 1px solid #f0f0f0; font-weight: 600; border-radius: 12px 12px 0 0 !important; padding: 15px; }
+        .rank-badge { width: 24px; height: 24px; display: inline-block; text-align: center; line-height: 24px; border-radius: 4px; color: #fff; font-size: 0.75rem; font-weight: bold; }
+        .rank-1 { background: linear-gradient(45deg, #FFD700, #FFC107); }
+        .rank-2 { background: linear-gradient(45deg, #C0C0C0, #ADB5BD); }
+        .rank-3 { background: linear-gradient(45deg, #CD7F32, #D2691E); }
+        .rank-other { background-color: #f0f0f0; color: #999; }
+        .chart-container { height: 350px; width: 100%; }
+        
+        /* 针对手机的微调 */
+        @media (max-width: 576px) {
+            h3 { font-size: 1.25rem; }
+            .btn-group-sm > .btn { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
+            .list-group-item { padding: 12px 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app" class="container py-3">
+    
+    <!-- 顶部：仅管理员可见录入入口，发布给群友的文件会自动隐藏 -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0 fw-bold text-dark">🏃‍♂️ 跑团成绩单</h3>
+        <ul class="nav nav-pills nav-fill bg-white rounded p-1 shadow-sm" v-if="isAdminMode">
+            <li class="nav-item">
+                <a class="nav-link py-1 px-3 small" :class="{active: currentView === 'dashboard'}" href="#" @click="currentView = 'dashboard'">看表</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link py-1 px-3 small" :class="{active: currentView === 'entry'}" href="#" @click="currentView = 'entry'">录入</a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 视图1：数据看板 -->
+    <div v-show="currentView === 'dashboard'">
+        
+        <!-- 筛选器：针对手指触摸优化 -->
+        <div class="card">
+            <div class="card-body py-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-6">
+                        <select class="form-select form-select-sm bg-light border-0" v-model="filter.mode">
+                            <option value="month">📅 当月排名</option>
+                            <option value="all">🏆 累计排名</option>
+                        </select>
+                    </div>
+                    <div class="col-6" v-if="filter.mode === 'month'">
+                        <select class="form-select form-select-sm bg-light border-0" v-model="filter.month">
+                            <option v-for="m in 12" :value="m">{{ m }}月</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 排名卡片：使用 Tabs 切换节省手机空间 -->
+        <div class="card">
+            <div class="card-header p-2">
+                <ul class="nav nav-pills nav-fill card-header-pills">
+                    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-dist" @click="activeTab='dist'">跑神榜</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-count" @click="activeTab='count'">勤奋榜</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-pace" @click="activeTab='pace'">飞毛腿</a></li>
+                </ul>
+            </div>
+            <div class="card-body p-0">
+                <div class="tab-content">
+                    <!-- 距离榜 -->
+                    <div class="tab-pane fade show active" v-show="activeTab==='dist'">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center" v-for="(item, index) in rankings.distance" :key="item.name">
+                                <div class="d-flex align-items-center">
+                                    <span class="rank-badge" :class="getRankClass(index)">{{ index + 1 }}</span>
+                                    <span class="ms-3 fw-medium">{{ item.name }}</span>
+                                </div>
+                                <span class="fw-bold text-primary">{{ item.distance.toFixed(1) }} <small class="text-muted fw-normal">km</small></span>
+                            </li>
+                            <li v-if="rankings.distance.length === 0" class="list-group-item text-center text-muted py-4">本月暂无数据</li>
+                        </ul>
+                    </div>
+                    <!-- 次数榜 -->
+                    <div class="tab-pane fade" :class="{show: activeTab==='count', active: activeTab==='count'}" v-show="activeTab==='count'">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center" v-for="(item, index) in rankings.count" :key="item.name">
+                                <div class="d-flex align-items-center">
+                                    <span class="rank-badge" :class="getRankClass(index)">{{ index + 1 }}</span>
+                                    <span class="ms-3 fw-medium">{{ item.name }}</span>
+                                </div>
+                                <span class="fw-bold text-dark">{{ item.count }} <small class="text-muted fw-normal">次</small></span>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- 配速榜 -->
+                    <div class="tab-pane fade" :class="{show: activeTab==='pace', active: activeTab==='pace'}" v-show="activeTab==='pace'">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center" v-for="(item, index) in rankings.pace" :key="item.name">
+                                <div class="d-flex align-items-center">
+                                    <span class="rank-badge" :class="getRankClass(index)">{{ index + 1 }}</span>
+                                    <span class="ms-3 fw-medium">{{ item.name }}</span>
+                                </div>
+                                <span class="fw-bold text-danger">{{ item.pace }} <small class="text-muted fw-normal">/km</small></span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 个人趋势 -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>📈 个人月度趋势</span>
+            </div>
+            <div class="card-body">
+                <select class="form-select mb-3" v-model="selectedUser">
+                    <option value="" disabled>🔍 点击选择跑友查看详情...</option>
+                    <option v-for="user in allUsers" :value="user">{{ user }}</option>
+                </select>
+                <div v-if="selectedUser" id="trendChart" class="chart-container"></div>
+                <div v-else class="text-center py-5 text-muted bg-light rounded">
+                    👆 请先选择一位跑友
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center text-muted small mt-4 mb-5">
+            Generated by 跑团小助手
+        </div>
+    </div>
+
+    <!-- 视图2：数据录入 (仅管理员可见) -->
+    <div v-show="currentView === 'entry' && isAdminMode">
+        
+        <!-- 发布区 -->
+        <div class="card border-success border-2 mb-4">
+            <div class="card-body text-center">
+                <h5 class="text-success fw-bold">🚀 发布给群友</h5>
+                <p class="small text-muted mb-3">录入完数据后，点击下方按钮，生成一个包含最新数据的网页文件。把那个文件上传到网站即可。</p>
+                <button class="btn btn-success w-100 py-2" @click="exportHtmlFile">
+                    <i class="bi bi-file-earmark-arrow-down"></i> 生成发布文件 (index.html)
+                </button>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">📂 批量导入</div>
+                    <div class="card-body">
+                        <button class="btn btn-sm btn-outline-secondary mb-3" @click="downloadTemplate">⬇️ 下载CSV模板</button>
+                        <input type="file" class="form-control" @change="handleFileUpload" accept=".csv">
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">📝 手动录入</div>
+                    <div class="card-body">
+                        <form @submit.prevent="addRecord">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <label class="form-label small">姓名</label>
+                                    <input type="text" class="form-control" v-model="form.name" required list="userList">
+                                    <datalist id="userList"><option v-for="user in allUsers" :value="user"></option></datalist>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">日期</label>
+                                    <input type="date" class="form-control" v-model="form.date" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small">类型</label>
+                                    <select class="form-select" v-model="form.type">
+                                        <option value="跑步">🏃 跑步</option>
+                                        <option value="力量">🏋️ 力量</option>
+                                        <option value="户外">🧗 户外</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">距离(km)</label>
+                                    <input type="number" step="0.01" class="form-control" v-model="form.distance" :disabled="form.type !== '跑步' && form.type !== '户外'">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">配速(分.秒)</label>
+                                    <input type="number" step="0.01" class="form-control" v-model="form.pace" :disabled="form.type !== '跑步'">
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <button type="submit" class="btn btn-primary w-100">提交</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between">
+                        <span>数据记录 ({{ records.length }})</span>
+                        <button class="btn btn-xs btn-link text-danger p-0" @click="clearData">清空</button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 300px;">
+                            <table class="table table-sm table-striped mb-0 small">
+                                <thead><tr><th>日期</th><th>姓名</th><th>数据</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="r in recentRecords" :key="r.id">
+                                        <td>{{ r.date.slice(5) }}</td>
+                                        <td>{{ r.name }}</td>
+                                        <td>{{ r.type=='跑步' ? r.distance+'km' : r.type }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https:[EMAIL]/dist/vue.global.js"></script>
+<script src="https:[EMAIL]/dist/echarts.min.js"></script>
+
+<script>
+    const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
+
+    createApp({
+        setup() {
+            // --- 核心配置 ---
+            // 这是一个标记，用于判断当前是“管理员录入模式”还是“群友查看模式”
+            // 如果本地有数据，或者URL里带 ?admin=1，则显示录入界面
+            const isAdminMode = ref(true); 
+
+            const currentView = ref('dashboard');
+            const activeTab = ref('dist');
+            const records = ref([]);
+            const filter = ref({ mode: 'month', month: new Date().getMonth() + 1 });
+            const selectedUser = ref('');
+            const form = ref({ name: '', date: new Date().toISOString().split('T')[0], type: '跑步', distance: '', pace: '' });
+            let chartInstance = null;
+
+            // --- 初始化 ---
+            onMounted(() => {
+                // 1. 尝试从 HTML 内部读取（发布模式）
+                const embeddedData = document.getElementById('embedded-data');
+                if (embeddedData && embeddedData.textContent.trim() !== '') {
+                    try {
+                        records.value = JSON.parse(embeddedData.textContent);
+                        isAdminMode.value = false; // 发布版默认隐藏后台
+                        console.log("Loaded embedded data");
+                    } catch(e) { console.error(e); }
+                } else {
+                    // 2. 尝试从 LocalStorage 读取（管理员模式）
+                    const saved = localStorage.getItem('run_records');
+                    if (saved) {
+                        records.value = JSON.parse(saved);
+                    } else {
+                        // 首次使用初始化空数组
+                        records.value = []; 
+                    }
+                }
+
+                // 检查 URL 是否强制开启管理员模式 (方便你查看发布后的页面时也能录入)
+                if (window.location.search.includes('admin=1')) {
+                    isAdminMode.value = true;
+                }
+                
+                window.addEventListener('resize', () => { if(chartInstance) chartInstance.resize(); });
+            });
+
+            // --- 计算属性 (逻辑不变) ---
+            const allUsers = computed(() => [...new Set(records.value.map(r => r.name))]);
+            const recentRecords = computed(() => [...records.value].sort((a, b) => b.id - a.id).slice(0, 20));
+            const filteredData = computed(() => records.value.filter(r => {
+                if (filter.value.mode === 'all') return true;
+                return (new Date(r.date).getMonth() + 1) == filter.value.month;
+            }));
+            const rankings = computed(() => {
+                const map = {};
+                filteredData.value.forEach(r => {
+                    if (!map[r.name]) map[r.name] = { name: r.name, count: 0, distance: 0, paceSum: 0, runCount: 0 };
+                    map[r.name].count += 1;
+                    if (r.distance) map[r.name].distance += parseFloat(r.distance);
+                    if (r.type === '跑步' && r.pace) { map[r.name].paceSum += parseFloat(r.pace); map[r.name].runCount += 1; }
+                });
+                const list = Object.values(map);
+                return {
+                    count: [...list].sort((a, b) => b.count - a.count).slice(0, 10),
+                    distance: [...list].sort((a, b) => b.distance - a.distance).slice(0, 10),
+                    pace: [...list].filter(i => i.runCount > 0).map(i => ({ ...i, pace: (i.paceSum / i.runCount).toFixed(2) })).sort((a, b) => a.pace - b.pace).slice(0, 10)
+                };
+            });
+
+            // --- 核心：导出发布文件 ---
+            const exportHtmlFile = () => {
+                const currentHtml = document.documentElement.outerHTML;
+                const dataJson = JSON.stringify(records.value);
+                
+                // 找到数据注入点，替换内容
+                // 我们在 body 底部放一个 script 标签专门存数据
+                let newHtml = currentHtml;
+                
+                // 如果已经有数据块，替换它；如果没有，插入它
+                if (newHtml.includes('id="embedded-data"')) {
+                    newHtml = newHtml.replace(/<script type="application\/json" id="embedded-data">[\s\S]*?<\/script>/, 
+                        `<script type="application/json" id="embedded-data">${dataJson}<\/script>`);
+                } else {
+                    // 插入到 body 结束标签前
+                    newHtml = newHtml.replace('</body>', `<script type="application/json" id="embedded-data">${dataJson}<\/script></body>`);
+                }
+
+                // 强制把 isAdminMode 设为 false，这样群友打开看不到录入按钮
+                // (这里通过不修改代码逻辑，而是依靠 onMounted 里的检测逻辑，只要 embedded-data 有值，就默认 false)
+
+                const blob = new Blob([newHtml], { type: 'text/html' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = "index.html"; // 建议下载为 index.html
+                link.click();
+                alert("发布文件已生成！\n请将下载的 index.html 上传到 Gitee Pages 或 GitHub Pages，\n然后把链接发到群里。");
+            };
+
+            // --- 常规方法 ---
+            const downloadTemplate = () => {
+                const csv = "打卡日期,姓名,打卡形式(跑步/力量/户外),距离(km),配速(分.秒)\n2025-12-01,张三,跑步,5.0,6.30";
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(new Blob(["\ufeff"+csv], {type: 'text/csv;charset=utf-8;'}));
+                link.download = "template.csv";
+                link.click();
+            };
+            const handleFileUpload = (e) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const lines = ev.target.result.split('\n');
+                    let count = 0;
+                    for(let i=1; i<lines.length; i++) {
+                        const c = lines[i].split(',');
+                        if(c.length>=3 && c[0] && c[1]) {
+                            records.value.push({
+                                id: Date.now()+i, name: c[1].trim(), date: c[0].trim(), type: c[2].trim(),
+                                distance: parseFloat(c[3]||0), pace: parseFloat(c[4]||0)
+                            });
+                            count++;
+                        }
+                    }
+                    localStorage.setItem('run_records', JSON.stringify(records.value));
+                    alert(`导入 ${count} 条`);
+                };
+                if(e.target.files[0]) reader.readAsText(e.target.files[0]);
+                e.target.value = '';
+            };
+            const addRecord = () => {
+                records.value.push({ ...form.value, id: Date.now(), distance: parseFloat(form.value.distance||0), pace: parseFloat(form.value.pace||0) });
+                localStorage.setItem('run_records', JSON.stringify(records.value));
+                alert('已录入');
+            };
+            const clearData = () => { if(confirm('清空?')) { records.value=[]; localStorage.setItem('run_records', '[]'); } };
+            const getRankClass = (i) => i===0?'rank-1':(i===1?'rank-2':(i===2?'rank-3':'rank-other'));
+
+            // --- 图表 ---
+            watch(selectedUser, (u) => { if(u) nextTick(() => renderChart(u)); });
+            const renderChart = (user) => {
+                const dom = document.getElementById('trendChart');
+                if(!dom) return;
+                if(chartInstance) chartInstance.dispose();
+                chartInstance = echarts.init(dom);
+                // 简化版图表配置
+                const months=[], dDist=[], dPace=[];
+                for(let i=5; i>=0; i--) { // 手机端只显示近6个月，防止太挤
+                    const d=new Date(); d.setMonth(d.getMonth()-i);
+                    const m=d.getMonth()+1; const y=d.getFullYear();
+                    months.push(m+'月');
+                    const rs = records.value.filter(r=>new Date(r.date).getMonth()+1===m && new Date(r.date).getFullYear()===y && r.name===user);
+                    dDist.push(rs.reduce((a,b)=>a+(b.distance||0),0).toFixed(1));
+                    const runs = rs.filter(r=>r.type==='跑步'&&r.pace>0);
+                    dPace.push(runs.length ? (runs.reduce((a,b)=>a+b.pace,0)/runs.length).toFixed(2) : 0);
+                }
+                chartInstance.setOption({
+                    grid: { left: 40, right: 40, bottom: 20, top: 40 },
+                    tooltip: { trigger: 'axis' },
+                    legend: { data: ['距离', '配速'], bottom: 0 },
+                    xAxis: { data: months },
+                    yAxis: [{ type: 'value', name: 'km' }, { type: 'value', name: '配速', inverse: true }],
+                    series: [{ name: '距离', type: 'bar', data: dDist, itemStyle:{color:'#0d6efd'} }, { name: '配速', type: 'line', yAxisIndex: 1, data: dPace, itemStyle:{color:'#dc3545'} }]
+                });
+            };
+
+            return { isAdminMode, currentView, activeTab, filter, rankings, selectedUser, allUsers, form, addRecord, recentRecords, clearData, getRankClass, downloadTemplate, handleFileUpload, exportHtmlFile, records };
+        }
+    }).mount('#app');
+</script>
+
+<!-- 数据注入占位符：发布时数据会存在这里 -->
+<script type="application/json" id="embedded-data"></script>
+
+</body>
+</html>
